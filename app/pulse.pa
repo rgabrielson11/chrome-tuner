@@ -1,0 +1,5 @@
+load-module module-native-protocol-unix auth-anonymous=1 socket=/tmp/pulse/native
+load-module module-null-sink sink_name=virtual rate=48000 channels=2 sink_properties=device.description=virtual
+set-default-sink virtual
+set-default-source virtual.monitor
+load-module module-always-sink

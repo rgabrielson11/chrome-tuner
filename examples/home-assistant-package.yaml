@@ -1,0 +1,61 @@
+# Home Assistant package for chrome-tuner.
+# Add to configuration.yaml:   homeassistant: { packages: { chrome_tuner: !include chrome_tuner.yaml } }
+# Then reload REST, RESTful Command and Template entities (no restart needed).
+rest:
+  - resource: http://YOUR-UNRAID-IP:5004/api/status
+    scan_interval: 30
+    timeout: 10
+    sensor:
+      - name: "Chrome Tuner Channel"
+        unique_id: chrome_tuner_channel
+        icon: mdi:television-classic
+        value_template: "{{ value_json.station or 'None' }}"
+        json_attributes: [encoder, since, guide_age_min, pushover]
+      - name: "Chrome Tuner Viewers"
+        unique_id: chrome_tuner_viewers
+        icon: mdi:account-eye
+        state_class: measurement
+        value_template: "{{ value_json.viewers | int(0) }}"
+      - name: "Chrome Tuner Watchdog"
+        unique_id: chrome_tuner_watchdog
+        icon: mdi:shield-check
+        value_template: "{{ value_json.lock.state if value_json.lock is defined and value_json.lock else 'unavailable' }}"
+        availability: "{{ value_json.lock is defined and value_json.lock is not none }}"
+        json_attributes_path: "$.lock"
+        json_attributes: [station, problem, problem_for, attempts, locked_since]
+    binary_sensor:
+      - name: "Chrome Tuner Streaming"
+        unique_id: chrome_tuner_streaming
+        icon: mdi:broadcast
+        value_template: "{{ value_json.streaming }}"
+      - name: "Chrome Tuner Locked"
+        unique_id: chrome_tuner_locked
+        icon: mdi:lock
+        value_template: "{{ value_json.lock.locked if value_json.lock is defined and value_json.lock else false }}"
+        availability: "{{ value_json.lock is defined and value_json.lock is not none }}"
+
+rest_command:
+  chrome_tuner_set_lock:
+    url: http://YOUR-UNRAID-IP:5004/api/lock
+    method: post
+    content_type: application/json
+    payload: '{"locked": {{ locked | default(false) | tojson }}}'
+    timeout: 15
+
+template:
+  - switch:
+      - name: "Chrome Tuner Channel Lock"
+        unique_id: chrome_tuner_channel_lock
+        icon: mdi:lock-outline
+        availability: "{{ has_value('binary_sensor.chrome_tuner_locked') }}"
+        state: "{{ is_state('binary_sensor.chrome_tuner_locked', 'on') }}"
+        turn_on:
+          - action: rest_command.chrome_tuner_set_lock
+            data: { locked: true }
+          - action: homeassistant.update_entity
+            target: { entity_id: binary_sensor.chrome_tuner_locked }
+        turn_off:
+          - action: rest_command.chrome_tuner_set_lock
+            data: { locked: false }
+          - action: homeassistant.update_entity
+            target: { entity_id: binary_sensor.chrome_tuner_locked }

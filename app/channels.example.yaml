@@ -1,0 +1,12 @@
+# chrome-tuner channel list. Edited live: no restart needed.
+#
+#   number / name : what Emby shows
+#   url           : "current" = capture whatever page is open in the tuner browser
+#                   (pick the channel yourself via noVNC before watching), or a
+#                   fixed page URL the tuner navigates to on tune
+#   click, script : optional, fixed-URL channels only (see README in /app)
+
+channels:
+  - number: "1001"
+    name: "Chrome Tuner Live"
+    url: "current"
